@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>The Docket</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1F2420; --paper:#F1EDE4; --paper-dim:#E4DECF;
+    --amber:#E8A33D; --green:#4C8C6B; --rust:#B5533C;
+    --line:rgba(31,36,32,0.14); --radius:4px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--ink); color:var(--paper); font-family:'Inter',sans-serif; min-height:100vh; padding:24px 16px 64px;}
+  .wrap{max-width:680px;margin:0 auto;}
+
+  header{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:8px;}
+  h1{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:clamp(28px,7vw,38px); letter-spacing:-0.01em; margin:0; color:var(--paper);}
+  h1 .strike{color:var(--amber);}
+  .datestamp{font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:0.06em; text-transform:uppercase; color:rgba(241,237,228,0.55);}
+
+  .docket{background:var(--paper); color:var(--ink); border-radius:var(--radius); padding:20px; position:relative;
+    box-shadow:0 1px 0 rgba(0,0,0,0.4), 0 12px 28px -14px rgba(0,0,0,0.6); margin-bottom:16px;}
+  .docket-head{display:flex; justify-content:space-between; align-items:flex-start; border-bottom:1.5px solid var(--ink); padding-bottom:12px; margin-bottom:14px;}
+  .docket-head .label{font-family:'JetBrains Mono',monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.08em; color:rgba(31,36,32,0.6);}
+  .docket-head .day{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:22px; margin-top:2px;}
+
+  .stamp{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:12px; letter-spacing:0.06em; text-transform:uppercase;
+    border:2px solid currentColor; border-radius:999px; padding:6px 12px; transform:rotate(-4deg); white-space:nowrap;}
+  .stamp.band-high{color:var(--green);} .stamp.band-mid{color:var(--amber);} .stamp.band-low{color:var(--rust);}
+
+  .item{display:flex; align-items:center; gap:10px; padding:11px 0; border-bottom:1px solid var(--line);}
+  .item:last-child{border-bottom:none;}
+  .item-num{font-family:'JetBrains Mono',monospace; font-size:11px; color:rgba(31,36,32,0.4); width:18px; flex-shrink:0;}
+  .item-label{flex:1; font-weight:500; font-size:14px; min-width:0;}
+  .item-sub{display:block; font-weight:400; font-size:11.5px; color:rgba(31,36,32,0.55); margin-top:1px;}
+  .item-control{flex-shrink:0;}
+  .weight-dot{display:inline-block; width:5px;height:5px;border-radius:50%;background:var(--amber); margin-left:4px; vertical-align:middle;}
+
+  input[type=time],input[type=date]{font-family:'JetBrains Mono',monospace; font-size:13px; border:1.5px solid var(--ink); border-radius:var(--radius); padding:6px 8px; background:var(--paper); color:var(--ink);}
+  input[type=time]{width:92px;}
+  .stepper{display:flex;align-items:center;gap:6px;}
+  .stepper button{width:24px;height:24px;border-radius:50%;border:1.5px solid var(--ink); background:var(--paper); color:var(--ink); font-size:14px; font-weight:600; cursor:pointer; line-height:1; display:flex;align-items:center;justify-content:center;}
+  .stepper button:active{background:var(--ink); color:var(--paper);}
+  .stepper .val{font-family:'JetBrains Mono',monospace; font-weight:600; min-width:30px; text-align:center; font-size:13px;}
+
+  .stars{display:flex; gap:3px;}
+  .stars button{background:none;border:none;font-size:18px;cursor:pointer;padding:0; color:rgba(31,36,32,0.25); line-height:1;}
+  .stars button.on{color:var(--amber);}
+
+  .seg{display:flex; border:1.5px solid var(--ink); border-radius:var(--radius); overflow:hidden; flex-wrap:wrap;}
+  .seg button{font-family:'Inter',sans-serif; font-size:11.5px; font-weight:600; background:var(--paper); color:var(--ink); border:none; padding:6px 9px; cursor:pointer; border-right:1.5px solid var(--ink);}
+  .seg button:last-child{border-right:none;}
+  .seg button.on{background:var(--ink); color:var(--paper);}
+
+  .toggle{width:40px;height:23px;border-radius:999px;border:1.5px solid var(--ink); background:var(--paper); position:relative; cursor:pointer; flex-shrink:0;}
+  .toggle .knob{position:absolute; top:2px; left:2px; width:15px; height:15px; border-radius:50%; background:var(--ink); transition:left .15s ease;}
+  .toggle.on{background:var(--green); border-color:var(--green);}
+  .toggle.on .knob{left:19px; background:var(--paper);}
+
+  .docket-footer{margin-top:14px; padding-top:12px; border-top:1.5px solid var(--ink); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;}
+  .score-readout{font-family:'JetBrains Mono',monospace; font-size:13px; color:rgba(31,36,32,0.65);}
+  .score-readout b{font-size:16px; color:var(--ink);}
+  .addhabit{background:none;border:none; font-family:'JetBrains Mono',monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:rgba(31,36,32,0.5); cursor:pointer;}
+  .addhabit:hover{color:var(--ink);}
+
+  .stats{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:10px;}
+  .stat{background:rgba(241,237,228,0.06); border:1px solid rgba(241,237,228,0.14); border-radius:var(--radius); padding:12px 10px;}
+  .stat .n{font-family:'JetBrains Mono',monospace; font-weight:700; font-size:22px;}
+  .stat .l{font-size:10.5px; text-transform:uppercase; letter-spacing:0.06em; color:rgba(241,237,228,0.5); margin-top:2px;}
+  .stats2{display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-bottom:16px;}
+  .stat2{background:rgba(241,237,228,0.04); border:1px solid rgba(241,237,228,0.1); border-radius:var(--radius); padding:9px 10px;}
+  .stat2 .n{font-family:'JetBrains Mono',monospace; font-weight:600; font-size:15px;}
+  .stat2 .l{font-size:10px; text-transform:uppercase; letter-spacing:0.05em; color:rgba(241,237,228,0.45); margin-top:1px;}
+
+  .sect-title{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:14px; text-transform:uppercase; letter-spacing:0.04em; color:rgba(241,237,228,0.7); margin:24px 0 10px; display:flex; align-items:center; gap:8px;}
+  .sect-title::after{content:''; flex:1; height:1px; background:rgba(241,237,228,0.16);}
+  .sect-hint{font-size:11px; color:rgba(241,237,228,0.4); margin:-4px 0 10px; font-family:'JetBrains Mono',monospace; display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+  .sect-hint input[type=date]{font-size:11px; padding:4px 6px;}
+
+  .heatmap-card,.chart-card,.insights-card,.perhabit-card{background:var(--paper); color:var(--ink); border-radius:var(--radius); padding:16px;}
+  .heatgrid{display:grid; grid-template-columns:repeat(7,1fr); gap:5px;}
+  .heatcell{aspect-ratio:1; border-radius:3px; position:relative; cursor:pointer; border:1px solid rgba(31,36,32,0.12);}
+  .heatcell[data-band="none"]{background:repeating-linear-gradient(135deg, rgba(31,36,32,0.05) 0 3px, transparent 3px 6px);}
+  .heatcell[data-band="low"]{background:var(--rust); opacity:0.75;}
+  .heatcell[data-band="mid"]{background:var(--amber); opacity:0.85;}
+  .heatcell[data-band="high"]{background:var(--green);}
+  .heatcell[data-today="1"]{outline:2px solid var(--ink); outline-offset:1px;}
+  .heatcell:hover{outline:1.5px solid var(--ink);}
+  .heat-legend{display:flex; gap:14px; margin-top:12px; font-size:11px; color:rgba(31,36,32,0.6); flex-wrap:wrap;}
+  .heat-legend span{display:inline-flex; align-items:center; gap:5px;}
+  .swatch{width:10px;height:10px;border-radius:2px;display:inline-block;}
+
+  svg{display:block; width:100%; height:auto;}
+
+  .perhabit-row{display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--line); font-size:13px;}
+  .perhabit-row:last-child{border-bottom:none;}
+  .perhabit-row .n{flex:1;}
+  .perhabit-row .bar-bg{width:90px; height:6px; background:rgba(31,36,32,0.1); border-radius:3px; overflow:hidden;}
+  .perhabit-row .bar-fill{height:100%; background:var(--green);}
+  .perhabit-row .v{font-family:'JetBrains Mono',monospace; font-size:12px; width:38px; text-align:right;}
+
+  .insights-row{display:flex; gap:8px; align-items:center; margin-bottom:10px; flex-wrap:wrap;}
+  select{font-family:'Inter',sans-serif; font-size:12.5px; padding:6px 8px; border-radius:3px; border:1.5px solid var(--ink); background:var(--paper); color:var(--ink);}
+  .insight-result{font-size:13px; line-height:1.5;}
+  .insight-result b{font-family:'JetBrains Mono',monospace;}
+
+  /* training */
+  .rest-note{font-size:13px; color:rgba(31,36,32,0.6); padding:8px 0 4px;}
+  .cardio-detail{display:flex; gap:8px; align-items:center; padding:0 0 12px 0; flex-wrap:wrap;}
+  .cardio-detail select{flex:1; min-width:110px;}
+  .cardio-detail input[type=text]{font-family:'Inter',sans-serif; font-size:13px; padding:7px 9px; border:1.5px solid var(--ink); border-radius:3px; background:var(--paper); color:var(--ink);}
+  .exercise-block{border-bottom:1px solid var(--line); padding:12px 0;}
+  .exercise-block:last-child{border-bottom:none;}
+  .exercise-head{display:flex; justify-content:space-between; align-items:flex-start; gap:8px; margin-bottom:8px;}
+  .exercise-name{font-weight:600; font-size:14px;}
+  .exercise-target{display:block; font-size:11px; color:rgba(31,36,32,0.5); font-family:'JetBrains Mono',monospace; margin-top:2px;}
+  .exercise-last{display:block; font-size:11px; color:var(--green); font-family:'JetBrains Mono',monospace; margin-top:1px;}
+  .ex-del{background:none;border:none;color:rgba(31,36,32,0.35);font-size:14px;cursor:pointer;flex-shrink:0;}
+  .set-row{display:flex; align-items:center; gap:8px; margin-bottom:6px;}
+  .set-row .set-num{font-family:'JetBrains Mono',monospace; font-size:11px; color:rgba(31,36,32,0.45); width:16px;}
+  .set-check{width:22px;height:22px;border:1.5px solid var(--ink); border-radius:4px; background:var(--paper); color:var(--paper); font-size:12px; font-weight:700; cursor:pointer; flex-shrink:0; display:flex; align-items:center; justify-content:center; padding:0; line-height:1;}
+  .set-check.done{background:var(--green); border-color:var(--green); color:var(--paper);}
+  .set-row input[type=number]{width:64px; font-family:'JetBrains Mono',monospace; font-size:13px; padding:6px 7px; border:1.5px solid var(--ink); border-radius:3px; background:var(--paper); color:var(--ink);}
+  .set-row .x{font-size:12px; color:rgba(31,36,32,0.4);}
+  .set-row .set-del{background:none;border:none;color:var(--rust); font-size:14px; cursor:pointer; margin-left:auto;}
+  .add-set-btn{background:none; border:1px dashed rgba(31,36,32,0.35); color:rgba(31,36,32,0.6); font-size:12px; padding:6px 10px; border-radius:3px; cursor:pointer; margin-top:2px;}
+  .manage-toggle{background:none;border:none; font-family:'JetBrains Mono',monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:rgba(31,36,32,0.45); cursor:pointer; margin-top:10px;}
+  .manage-panel{margin-top:10px; padding-top:10px; border-top:1px dashed var(--line);}
+  .manage-row{display:flex; align-items:center; gap:6px; padding:6px 0; font-size:13px; flex-wrap:wrap;}
+  .manage-row .ename{flex:1; min-width:100px;}
+  .manage-row .esets{width:44px;}
+  .manage-row .ereps{width:60px;}
+  .manage-row input{font-size:12.5px; padding:6px 7px; border-radius:3px; border:1px solid rgba(31,36,32,0.25); background:var(--paper); color:var(--ink);}
+  .manage-row .esave{background:var(--green); color:var(--paper); border:none; border-radius:3px; width:26px; height:26px; cursor:pointer; font-size:13px; flex-shrink:0;}
+  .manage-row .del{background:none;border:none;color:var(--rust);font-size:15px;cursor:pointer; flex-shrink:0;}
+  .manage-add{display:flex; gap:6px; margin-top:8px; flex-wrap:wrap;}
+  .manage-add input{font-size:12.5px; padding:6px 7px; border-radius:3px; border:1px solid rgba(31,36,32,0.25); background:var(--paper); color:var(--ink);}
+  .manage-add input.mname{flex:1; min-width:110px;}
+  .manage-add input.msets{width:44px;}
+  .manage-add input.mreps{width:60px;}
+  .manage-add button{background:var(--ink); color:var(--paper); border:none; border-radius:3px; padding:0 12px; font-size:12px; cursor:pointer;}
+
+  details.settings{margin-top:24px;}
+  details.settings summary{cursor:pointer; font-family:'JetBrains Mono',monospace; font-size:12px; text-transform:uppercase; letter-spacing:0.06em; color:rgba(241,237,228,0.45); list-style:none;}
+  details.settings summary::-webkit-details-marker{display:none;}
+  .settings-panel{background:rgba(241,237,228,0.06); border:1px solid rgba(241,237,228,0.14); border-radius:var(--radius); padding:14px; margin-top:10px;}
+  .settings-sub{font-family:'JetBrains Mono',monospace; font-size:10.5px; text-transform:uppercase; letter-spacing:0.05em; color:rgba(241,237,228,0.4); margin:14px 0 6px;}
+  .settings-row{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 0; border-bottom:1px solid rgba(241,237,228,0.1);}
+  .settings-row:last-child{border-bottom:none;}
+  .settings-row .name{font-size:13px;}
+  .settings-row input[type=text], .settings-row input[type=number]{font-family:'Inter',sans-serif; font-size:13px; padding:6px 8px; border-radius:3px; border:1px solid rgba(241,237,228,0.3); background:transparent; color:var(--paper); width:100%;}
+  .settings-row .weight-btns{display:flex; gap:4px;}
+  .settings-row .weight-btns button{font-size:10px; padding:4px 7px; border-radius:3px; border:1px solid rgba(241,237,228,0.3); background:transparent; color:rgba(241,237,228,0.6); cursor:pointer;}
+  .settings-row .weight-btns button.on{background:var(--amber); color:var(--ink); border-color:var(--amber);}
+  .settings-row button.del{background:none;border:none;color:var(--rust);font-size:16px;cursor:pointer;}
+  .new-habit-box{margin-top:10px; border-top:1px solid rgba(241,237,228,0.14); padding-top:12px;}
+  .new-habit-row{display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;}
+  .new-habit-row input, .new-habit-row select{flex:1; min-width:100px;}
+  .new-habit-row button{background:var(--amber); border:none; color:var(--ink); font-weight:600; border-radius:3px; padding:0 14px; cursor:pointer; font-size:13px;}
+  .action-row{display:flex; gap:8px; margin-top:14px; flex-wrap:wrap;}
+  .action-row button{font-size:12px; padding:8px 12px; border-radius:3px; cursor:pointer; border:1px solid rgba(241,237,228,0.3); background:transparent; color:var(--paper);}
+  .reset-btn{border-color:var(--rust) !important; color:var(--rust) !important;}
+
+  .empty-note{font-size:12px; color:rgba(241,237,228,0.4); text-align:center; padding:12px 0;}
+  .empty-note.dark{color:rgba(31,36,32,0.45);}
+
+  .modal-overlay{position:fixed; inset:0; background:rgba(0,0,0,0.55); display:none; align-items:flex-end; justify-content:center; z-index:50; padding:0;}
+  .modal-overlay.open{display:flex;}
+  .modal{background:var(--paper); color:var(--ink); width:100%; max-width:680px; max-height:85vh; overflow-y:auto; border-radius:12px 12px 0 0; padding:20px;}
+  .modal-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;}
+  .modal-head h2{font-family:'Space Grotesk',sans-serif; font-size:18px; margin:0;}
+  .modal-close{background:none;border:none;font-size:20px;cursor:pointer;color:var(--ink);}
+
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>THE <span class="strike">DOCKET</span></h1>
+    <div class="datestamp" id="todayLabel"></div>
+  </header>
+
+  <div class="stats">
+    <div class="stat"><div class="n" id="statMomentum">–</div><div class="l">Momentum</div></div>
+    <div class="stat"><div class="n" id="statLogStreak">0</div><div class="l">Day streak</div></div>
+    <div class="stat"><div class="n" id="statWeek">–</div><div class="l">7-day avg</div></div>
+  </div>
+  <div class="stats2">
+    <div class="stat2"><div class="n" id="statBest">–</div><div class="l">Best day logged</div></div>
+    <div class="stat2"><div class="n" id="statLongestStreak">0</div><div class="l">Longest streak ever</div></div>
+  </div>
+
+  <div class="docket">
+    <div class="docket-head">
+      <div><div class="label">Site Report — Today</div><div class="day" id="dayLong"></div></div>
+      <div class="stamp" id="stampBadge">–</div>
+    </div>
+    <div id="itemList"></div>
+    <div class="docket-footer">
+      <div class="score-readout">Today <b id="todayScore">0%</b></div>
+      <button class="addhabit" id="addHabitBtn">+ add line item</button>
+    </div>
+  </div>
+
+  <div class="sect-title">Training</div>
+  <div class="sect-hint">Logging <input type="date" id="trainDatePicker"></div>
+  <div class="docket" id="trainingCard">
+    <div class="docket-head">
+      <div><div class="label" id="trainDayLabel">—</div><div class="day" id="trainSplitName">—</div></div>
+      <div class="stamp" id="trainStamp">–</div>
+    </div>
+    <div id="trainingBody"></div>
+  </div>
+
+  <div class="sect-title">Job History</div>
+  <div class="sect-hint">Tap any day to log or edit it</div>
+  <div class="heatmap-card">
+    <div class="heatgrid" id="heatgrid"></div>
+    <div class="heat-legend">
+      <span><span class="swatch" style="background:var(--green)"></span>On track</span>
+      <span><span class="swatch" style="background:var(--amber)"></span>Mixed</span>
+      <span><span class="swatch" style="background:var(--rust)"></span>Fell short</span>
+      <span><span class="swatch" style="background:repeating-linear-gradient(135deg,rgba(31,36,32,.15) 0 3px,transparent 3px 6px)"></span>Not logged</span>
+    </div>
+  </div>
+
+  <div class="sect-title">Progress</div>
+  <div class="chart-card">
+    <svg id="trendChart" viewBox="0 0 600 180" preserveAspectRatio="none"></svg>
+    <div class="empty-note dark" id="chartEmptyNote" style="display:none;">Log a few days and your weekly trend builds here.</div>
+  </div>
+
+  <div class="sect-title">Per-habit averages</div>
+  <div class="sect-hint">Last 14 days</div>
+  <div class="perhabit-card" id="perHabitCard"></div>
+
+  <div class="sect-title">Insights</div>
+  <div class="sect-hint">Simple correlation between two habits, all-time</div>
+  <div class="insights-card">
+    <div class="insights-row">
+      <select id="corrA"></select>
+      <span style="font-size:12px;color:rgba(31,36,32,.5);">vs</span>
+      <select id="corrB"></select>
+    </div>
+    <div class="insight-result" id="corrResult"></div>
+  </div>
+
+  <details class="settings">
+    <summary>⚙ Settings, habits &amp; data</summary>
+    <div class="settings-panel">
+      <div class="settings-sub">Core habits — importance</div>
+      <div id="coreHabitSettings"></div>
+
+      <div class="settings-sub">Custom habits</div>
+      <div id="customHabitSettings"></div>
+      <div class="new-habit-box">
+        <div class="new-habit-row">
+          <input type="text" id="newHabitInput" placeholder="Habit name, e.g. Reading">
+          <select id="newHabitType">
+            <option value="toggle">Yes/No</option>
+            <option value="count">Number (vs target)</option>
+            <option value="stars">Rating 1–5</option>
+          </select>
+        </div>
+        <div class="new-habit-row" id="newHabitExtra" style="display:none;">
+          <input type="number" id="newHabitTarget" placeholder="Target value">
+          <select id="newHabitDirection">
+            <option value="higher">Higher is better</option>
+            <option value="lower">Lower is better</option>
+          </select>
+          <button id="newHabitBtn">Add</button>
+        </div>
+        <div class="new-habit-row" id="newHabitSimpleAdd">
+          <button id="newHabitBtnSimple" style="flex:0;">Add</button>
+        </div>
+      </div>
+
+      <div class="settings-sub">Targets</div>
+      <div class="settings-row"><span class="name">Water target (glasses)</span><input type="number" id="waterTargetInput" min="1" max="20" style="width:70px;"></div>
+      <div class="settings-row"><span class="name">Screen time cap (hours)</span><input type="number" id="screenTargetInput" min="1" max="16" style="width:70px;"></div>
+      <div class="settings-row"><span class="name">Admin/focus target (mins)</span><input type="number" id="adminTargetInput" min="10" max="480" style="width:70px;"></div>
+
+      <div class="action-row">
+        <button id="exportBtn">Export CSV</button>
+        <button class="reset-btn" id="resetBtn">Clear all data</button>
+      </div>
+    </div>
+  </details>
+
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-head"><h2 id="modalDate"></h2><button class="modal-close" id="modalClose">✕</button></div>
+    <div id="modalItemList"></div>
+    <div class="docket-footer"><div class="score-readout">Score <b id="modalScore">0%</b></div></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const STORE_KEY = 'liam_docket_v3';
+  const OLD_KEYS = ['liam_docket_v2','liam_docket_v1'];
+
+  const CORE = [
+    {id:'wake', label:'Up by 5:00am', type:'time'},
+    {id:'sleepQuality', label:'Sleep quality', type:'stars'},
+    {id:'water', label:'Water intake', type:'count', targetKey:'waterTarget', direction:'higher', unit:'glasses'},
+    {id:'food', label:'Food today', type:'seg', options:['Off track','Mixed','On track']},
+    {id:'energy', label:'Energy / mood', type:'stars'},
+    {id:'screenTime', label:'Screen time', type:'count', targetKey:'screenTarget', direction:'lower', unit:'hrs'},
+    {id:'adminTime', label:'Focused admin / business', type:'count', targetKey:'adminTarget', direction:'higher', unit:'mins', step:10},
+    {id:'alcohol', label:'Alcohol-free', type:'toggle'}
+  ];
+  const TRAINED_HABIT = {id:'trained', label:'Trained today', type:'raw'};
+
+  // ---------- training split ----------
+  const DOW_KEYS = [null,'mon','tue','wed','thu','fri',null]; // Date.getDay(): 0 Sun ... 6 Sat
+  const SPLIT_DEFAULT = {
+    mon:{name:'Back', exercises:[
+      {name:'Deadlift', sets:3, reps:'5-8'},
+      {name:'Pull-ups / Lat Pulldown', sets:4, reps:'8-12'},
+      {name:'Bent-over Row', sets:4, reps:'8-12'},
+      {name:'Seated Cable Row', sets:3, reps:'10-12'},
+      {name:'Face Pull', sets:3, reps:'12-15'}
+    ]},
+    tue:{name:'Legs', exercises:[
+      {name:'Barbell Squat', sets:4, reps:'6-10'},
+      {name:'Leg Press', sets:3, reps:'10-12'},
+      {name:'Romanian Deadlift', sets:3, reps:'8-12'},
+      {name:'Leg Curl', sets:3, reps:'10-12'},
+      {name:'Calf Raise', sets:4, reps:'12-15'}
+    ]},
+    wed:{name:'Chest', exercises:[
+      {name:'Bench Press', sets:4, reps:'6-10'},
+      {name:'Incline Dumbbell Press', sets:3, reps:'8-12'},
+      {name:'Chest Fly', sets:3, reps:'10-12'},
+      {name:'Dips', sets:3, reps:'8-12'},
+      {name:'Cable Crossover', sets:3, reps:'12-15'}
+    ]},
+    thu:{name:'Arms', exercises:[
+      {name:'Barbell Curl', sets:3, reps:'8-12'},
+      {name:'Hammer Curl', sets:3, reps:'10-12'},
+      {name:'Tricep Pushdown', sets:3, reps:'10-12'},
+      {name:'Skull Crushers', sets:3, reps:'8-12'},
+      {name:'Preacher Curl', sets:3, reps:'10-12'}
+    ]},
+    fri:{name:'Shoulders', exercises:[
+      {name:'Overhead Press', sets:4, reps:'6-10'},
+      {name:'Lateral Raise', sets:4, reps:'12-15'},
+      {name:'Rear Delt Fly', sets:3, reps:'12-15'},
+      {name:'Front Raise', sets:3, reps:'10-12'},
+      {name:'Shrugs', sets:3, reps:'10-12'}
+    ]}
+  };
+  function makeDefaultSplitConfig(){
+    const cfg={};
+    Object.keys(SPLIT_DEFAULT).forEach(k=>{
+      cfg[k] = { name:SPLIT_DEFAULT[k].name, exercises: SPLIT_DEFAULT[k].exercises.map((e,i)=>({id:k+'_'+i+'_'+Date.now()+Math.floor(Math.random()*999), name:e.name, sets:e.sets, reps:e.reps})) };
+    });
+    return cfg;
+  }
+
+  function isoOf(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+
+  function load(){
+    try{
+      const raw = localStorage.getItem(STORE_KEY);
+      if(raw) return JSON.parse(raw);
+      for(const k of OLD_KEYS){
+        const old = localStorage.getItem(k);
+        if(old){
+          const o = JSON.parse(old);
+          return {
+            waterTarget:o.waterTarget||8, screenTarget:o.screenTarget||6, adminTarget:o.adminTarget||60,
+            customHabits:(o.customHabits||[]).map(h=>h.type?h:{...h,type:'toggle'}),
+            weights:o.weights||{}, entries:o.entries||{},
+            splitConfig: makeDefaultSplitConfig(), workouts:{}
+          };
+        }
+      }
+    }catch(e){}
+    return {waterTarget:8, screenTarget:6, adminTarget:60, customHabits:[], weights:{}, entries:{}, splitConfig:makeDefaultSplitConfig(), workouts:{}};
+  }
+  function save(){ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
+
+  let state = load();
+  if(!state.customHabits) state.customHabits=[];
+  if(!state.weights) state.weights={};
+  if(!state.entries) state.entries={};
+  if(!state.screenTarget) state.screenTarget=6;
+  if(!state.adminTarget) state.adminTarget=60;
+  if(!state.splitConfig) state.splitConfig=makeDefaultSplitConfig();
+  if(!state.workouts) state.workouts={};
+
+  const todayISO = isoOf(new Date());
+  document.getElementById('todayLabel').textContent = new Date().toLocaleDateString('en-AU',{weekday:'short', day:'numeric', month:'short', year:'numeric'});
+  document.getElementById('dayLong').textContent = new Date().toLocaleDateString('en-AU',{weekday:'long'});
+
+  function habitList(){ return CORE.concat(state.customHabits); }
+  function scoringHabitList(){ return habitList().concat([TRAINED_HABIT]); }
+  function targetOf(h){ if(h.targetKey) return state[h.targetKey]; return h.target; }
+  function weightOf(h){ return state.weights[h.id] || 2; }
+
+  function scoreOf(h, val){
+    if(val===undefined || val===null || val==='') return null;
+    if(h.type==='raw') return val;
+    if(h.type==='time'){
+      const [hh,mm] = val.split(':').map(Number);
+      const mins = hh*60+mm, target=5*60;
+      const diff = Math.abs(mins-target);
+      if(diff<=10) return 100; if(diff<=30) return 70; if(diff<=60) return 40; return 10;
+    }
+    if(h.type==='stars') return (val/5)*100;
+    if(h.type==='seg') return [0,50,100][val];
+    if(h.type==='toggle') return val ? 100 : 0;
+    if(h.type==='count'){
+      const target = targetOf(h);
+      if(!target || target<=0) return null;
+      if(h.direction==='lower'){
+        if(val<=target) return 100;
+        return Math.max(0, 100 - ((val-target)/target)*100);
+      }
+      return Math.min(val/target,1)*100;
+    }
+    return null;
+  }
+
+  function getEntry(dateISO){
+    if(!state.entries[dateISO]) state.entries[dateISO] = {};
+    return state.entries[dateISO];
+  }
+  function valueFor(entry, h){
+    if(h.id==='trained') return entry ? entry.trained : undefined;
+    if(CORE.find(c=>c.id===h.id)) return entry ? entry[h.id] : undefined;
+    return entry && entry.custom ? entry.custom[h.id] : undefined;
+  }
+  function setValueFor(entry, h, v){
+    if(CORE.find(c=>c.id===h.id)){ entry[h.id]=v; }
+    else{ if(!entry.custom) entry.custom={}; entry.custom[h.id]=v; }
+  }
+
+  function dayScore(entry){
+    if(!entry) return null;
+    const habits = scoringHabitList();
+    let totalW=0, sum=0, any=false;
+    habits.forEach(h=>{
+      const v = valueFor(entry,h);
+      const s = scoreOf(h,v);
+      if(s!==null){ const w=weightOf(h); sum += s*w; totalW += w; any=true; }
+    });
+    if(!any) return null;
+    return Math.round(sum/totalW);
+  }
+
+  // ---------- workout helpers ----------
+  function getSplitKey(iso){ return DOW_KEYS[new Date(iso+'T00:00:00').getDay()]; }
+  function getWorkout(iso){
+    if(!state.workouts[iso]) state.workouts[iso] = {cardio:{done:false,type:'Bike',duration:15}, exercises:{}};
+    if(!state.workouts[iso].cardio) state.workouts[iso].cardio = {done:false,type:'Bike',duration:15};
+    if(!state.workouts[iso].exercises) state.workouts[iso].exercises = {};
+    return state.workouts[iso];
+  }
+  function computeTrainedScore(iso){
+    const key = getSplitKey(iso);
+    if(!key) return undefined; // rest day — excluded from score entirely
+    const w = state.workouts[iso];
+    if(!w) return 0;
+    const hasSets = Object.values(w.exercises||{}).some(ex=>ex.sets && ex.sets.some(s=>s.done));
+    if(hasSets) return 100;
+    if(w.cardio && w.cardio.done) return 50;
+    return 0;
+  }
+  function entryForDate(iso){
+    const e = state.entries[iso];
+    return Object.assign({}, e||{}, {trained: computeTrainedScore(iso)});
+  }
+  function scoreForDate(iso){ return dayScore(entryForDate(iso)); }
+
+  function lastTopSet(exId, beforeISO){
+    const dates = Object.keys(state.workouts).filter(d=>d<beforeISO).sort().reverse();
+    for(const d of dates){
+      const w = state.workouts[d];
+      const ex = w.exercises && w.exercises[exId];
+      const doneSets = ex && ex.sets ? ex.sets.filter(s=>s.done) : [];
+      if(doneSets.length){
+        let top = doneSets[0];
+        doneSets.forEach(s=>{ if((s.weight||0) > (top.weight||0)) top = s; });
+        if(top.weight || top.reps) return {date:d, weight:top.weight, reps:top.reps};
+      }
+    }
+    return null;
+  }
+
+  // ---------- render an item list into a container for a given entry/date (habits only) ----------
+  function renderItemList(container, entry, onChange){
+    container.innerHTML='';
+    habitList().forEach((h,i)=>{
+      const row = document.createElement('div');
+      row.className='item';
+      const v = valueFor(entry,h);
+      let controlHTML='';
+      if(h.type==='time'){
+        controlHTML = `<input type="time" data-role="time" value="${v||''}">`;
+      } else if(h.type==='stars'){
+        let stars=''; for(let s=1;s<=5;s++) stars+=`<button data-val="${s}" class="${s<=(v||0)?'on':''}">★</button>`;
+        controlHTML = `<div class="stars" data-role="stars">${stars}</div>`;
+      } else if(h.type==='count'){
+        const step = h.step||1;
+        controlHTML = `<div class="stepper" data-role="stepper" data-step="${step}"><button data-dir="-1">–</button><span class="val">${v!==undefined?v:0}</span><button data-dir="1">+</button></div>`;
+      } else if(h.type==='seg'){
+        controlHTML = `<div class="seg" data-role="seg">` + h.options.map((o,idx)=>`<button data-val="${idx}" class="${v===idx?'on':''}">${o}</button>`).join('') + `</div>`;
+      } else if(h.type==='toggle'){
+        controlHTML = `<div class="toggle ${v?'on':''}" data-role="toggle"><div class="knob"></div></div>`;
+      }
+      const target = targetOf(h);
+      let sub='';
+      if(h.type==='count') sub = `<span class="item-sub">${h.direction==='lower'?'Cap':'Target'}: ${target||'–'}${h.unit?' '+h.unit:''}</span>`;
+      const w = weightOf(h);
+      const dots = w>=3 ? '<span class="weight-dot"></span><span class="weight-dot"></span><span class="weight-dot"></span>' :
+                   w===2 ? '<span class="weight-dot"></span><span class="weight-dot"></span>' : '<span class="weight-dot"></span>';
+      row.innerHTML = `<span class="item-num">${String(i+1).padStart(2,'0')}</span>
+        <span class="item-label">${h.label}${dots}${sub}</span>
+        <span class="item-control">${controlHTML}</span>`;
+      container.appendChild(row);
+
+      const ctrl = row.querySelector('[data-role]');
+      if(!ctrl) return;
+      const role = ctrl.dataset.role;
+      if(role==='time') ctrl.addEventListener('change', e=>{ setValueFor(entry,h,e.target.value); onChange(); });
+      if(role==='stars') ctrl.querySelectorAll('button').forEach(btn=>btn.addEventListener('click', ()=>{ setValueFor(entry,h,Number(btn.dataset.val)); onChange(); }));
+      if(role==='seg') ctrl.querySelectorAll('button').forEach(btn=>btn.addEventListener('click', ()=>{ setValueFor(entry,h,Number(btn.dataset.val)); onChange(); }));
+      if(role==='toggle') ctrl.addEventListener('click', ()=>{ setValueFor(entry,h,!v); onChange(); });
+      if(role==='stepper') ctrl.querySelectorAll('button').forEach(btn=>btn.addEventListener('click', ()=>{
+        const step = Number(ctrl.dataset.step)||1;
+        const dir = Number(btn.dataset.dir);
+        let cur = v!==undefined?v:0;
+        cur = Math.max(0, cur+dir*step);
+        setValueFor(entry,h,cur); onChange();
+      }));
+    });
+  }
+
+  function renderToday(){
+    const entry = getEntry(todayISO);
+    renderItemList(document.getElementById('itemList'), entry, ()=>{ save(); refreshAll(); });
+    const s = scoreForDate(todayISO);
+    document.getElementById('todayScore').textContent = s===null?'–':s+'%';
+  }
+
+  // ---------- training render ----------
+  let trainViewDate = todayISO;
+  function renderTraining(){
+    const iso = trainViewDate;
+    const key = getSplitKey(iso);
+    const label = new Date(iso+'T00:00:00').toLocaleDateString('en-AU',{weekday:'long'});
+    document.getElementById('trainDayLabel').textContent = label.toUpperCase();
+    const body = document.getElementById('trainingBody');
+
+    if(!key){
+      document.getElementById('trainSplitName').textContent = 'Rest Day';
+      document.getElementById('trainStamp').textContent = 'RECOVERY';
+      document.getElementById('trainStamp').className = 'stamp band-mid';
+      const w = getWorkout(iso);
+      body.innerHTML = `<div class="rest-note">No lifting scheduled — optional cardio only.</div>`;
+      renderCardioBlock(body, iso, w);
+      wireCardio(iso);
+      return;
+    }
+
+    const split = state.splitConfig[key];
+    document.getElementById('trainSplitName').textContent = split.name;
+    const w = getWorkout(iso);
+    const hasSets = Object.values(w.exercises||{}).some(ex=>ex.sets && ex.sets.some(s=>s.done));
+    const stampEl = document.getElementById('trainStamp');
+    if(hasSets){ stampEl.textContent='LOGGED'; stampEl.className='stamp band-high'; }
+    else if(w.cardio && w.cardio.done){ stampEl.textContent='CARDIO ONLY'; stampEl.className='stamp band-mid'; }
+    else { stampEl.textContent='NOT STARTED'; stampEl.className='stamp band-low'; }
+
+    body.innerHTML = '';
+    renderCardioBlock(body, iso, w);
+    wireCardio(iso);
+
+    split.exercises.forEach(ex=>{
+      if(!w.exercises[ex.id]) w.exercises[ex.id] = {sets:[]};
+      const exData = w.exercises[ex.id];
+      const block = document.createElement('div');
+      block.className='exercise-block';
+      const last = lastTopSet(ex.id, iso);
+      block.innerHTML = `
+        <div class="exercise-head">
+          <div>
+            <div class="exercise-name">${ex.name}</div>
+            <span class="exercise-target">Target: ${ex.sets} × ${ex.reps}</span>
+            ${last ? `<span class="exercise-last">Last time: ${last.weight||0}kg × ${last.reps||0}</span>` : `<span class="exercise-last" style="color:rgba(31,36,32,.4);">No previous data yet</span>`}
+          </div>
+        </div>
+        <div class="set-rows" data-ex="${ex.id}"></div>
+        <button class="add-set-btn" data-ex="${ex.id}">+ Add set</button>
+      `;
+      body.appendChild(block);
+      renderSetRows(block.querySelector('.set-rows'), iso, ex.id);
+      block.querySelector('.add-set-btn').addEventListener('click', ()=>{
+        const prevInSession = exData.sets.length ? exData.sets[exData.sets.length-1].weight : null;
+        const suggested = prevInSession || (last?last.weight:null);
+        exData.sets.push({weight:suggested||undefined, reps:undefined, done:false});
+        save(); renderSetRows(block.querySelector('.set-rows'), iso, ex.id); refreshAfterWorkoutChange();
+      });
+    });
+
+    const manageWrap = document.createElement('div');
+    manageWrap.innerHTML = `<button class="manage-toggle" id="manageToggle_${key}">✎ Manage exercises for ${split.name}</button>
+      <div class="manage-panel" id="managePanel_${key}" style="display:none;"></div>`;
+    body.appendChild(manageWrap);
+    document.getElementById('manageToggle_'+key).addEventListener('click', ()=>{
+      const panel = document.getElementById('managePanel_'+key);
+      panel.style.display = panel.style.display==='none' ? 'block' : 'none';
+      if(panel.style.display==='block') renderManagePanel(panel, key);
+    });
+  }
+
+  function renderCardioBlock(body, iso, w){
+    const cardioWrap = document.createElement('div');
+    cardioWrap.innerHTML = `
+      <div class="item">
+        <span class="item-label">Cardio warm-up<span class="item-sub">Optional, before the session</span></span>
+        <span class="item-control"><div class="toggle ${w.cardio.done?'on':''}" id="cardioToggle"><div class="knob"></div></div></span>
+      </div>
+      <div class="cardio-detail" id="cardioDetail" style="display:${w.cardio.done?'flex':'none'};">
+        <select id="cardioType">
+          ${['Bike','Row','Incline walk','Run','Stairmaster'].map(t=>`<option value="${t}" ${w.cardio.type===t?'selected':''}>${t}</option>`).join('')}
+        </select>
+        <div class="stepper" id="cardioDurStepper"><button data-dir="-1">–</button><span class="val">${w.cardio.duration||0}m</span><button data-dir="1">+</button></div>
+        <input type="text" id="cardioNotes" placeholder="What did you do? e.g. easy pace, steady state" value="${w.cardio.notes||''}" style="flex-basis:100%;">
+      </div>
+    `;
+    body.appendChild(cardioWrap);
+  }
+  function wireCardio(iso){
+    const w = getWorkout(iso);
+    const toggle = document.getElementById('cardioToggle');
+    const detail = document.getElementById('cardioDetail');
+    if(toggle) toggle.addEventListener('click', ()=>{
+      w.cardio.done = !w.cardio.done;
+      toggle.classList.toggle('on', w.cardio.done);
+      if(detail) detail.style.display = w.cardio.done ? 'flex' : 'none';
+      save(); refreshAfterWorkoutChange();
+    });
+    const typeSel = document.getElementById('cardioType');
+    if(typeSel) typeSel.addEventListener('change', e=>{ w.cardio.type = e.target.value; save(); });
+    const notesInput = document.getElementById('cardioNotes');
+    if(notesInput) notesInput.addEventListener('change', e=>{ w.cardio.notes = e.target.value; save(); });
+    const durStepper = document.getElementById('cardioDurStepper');
+    if(durStepper) durStepper.querySelectorAll('button').forEach(btn=>btn.addEventListener('click', ()=>{
+      const dir = Number(btn.dataset.dir);
+      w.cardio.duration = Math.max(0, (w.cardio.duration||0)+dir*5);
+      durStepper.querySelector('.val').textContent = w.cardio.duration+'m';
+      save(); refreshAfterWorkoutChange();
+    }));
+  }
+
+  function renderSetRows(container, iso, exId){
+    const w = getWorkout(iso);
+    const exData = w.exercises[exId];
+    container.innerHTML='';
+    exData.sets.forEach((s,idx)=>{
+      const row = document.createElement('div');
+      row.className='set-row';
+      const wtVal = (s.weight!==undefined && s.weight!==null) ? s.weight : '';
+      const rpVal = (s.reps!==undefined && s.reps!==null) ? s.reps : '';
+      row.innerHTML = `<span class="set-num">${idx+1}</span>
+        <button class="set-check ${s.done?'done':''}" title="Mark set done">${s.done?'✓':''}</button>
+        <input type="number" class="wt" value="${wtVal}" placeholder="0" min="0" step="0.5" inputmode="decimal"> <span class="x">kg ×</span>
+        <input type="number" class="rp" value="${rpVal}" placeholder="0" min="0" inputmode="numeric"> <span class="x">reps</span>
+        <button class="set-del">✕</button>`;
+      container.appendChild(row);
+      row.querySelector('.set-check').addEventListener('click', ()=>{
+        s.done = !s.done; save(); renderSetRows(container, iso, exId); refreshAfterWorkoutChange();
+      });
+      row.querySelector('.wt').addEventListener('change', e=>{ s.weight = e.target.value===''?undefined:Number(e.target.value); save(); refreshAfterWorkoutChange(true); });
+      row.querySelector('.rp').addEventListener('change', e=>{ s.reps = e.target.value===''?undefined:Number(e.target.value); save(); refreshAfterWorkoutChange(true); });
+      row.querySelector('.set-del').addEventListener('click', ()=>{
+        exData.sets.splice(idx,1); save(); renderSetRows(container, iso, exId); refreshAfterWorkoutChange();
+      });
+    });
+  }
+
+  function renderManagePanel(panel, key){
+    const split = state.splitConfig[key];
+    panel.innerHTML = split.exercises.map(ex=>`
+      <div class="manage-row" data-id="${ex.id}">
+        <input type="text" class="ename" value="${ex.name}">
+        <input type="number" class="esets" value="${ex.sets}" min="1">
+        <input type="text" class="ereps" value="${ex.reps}">
+        <button class="esave" title="Save changes">✓</button>
+        <button class="del" data-id="${ex.id}" title="Delete exercise">✕</button>
+      </div>
+    `).join('') + `
+      <div class="manage-add">
+        <input type="text" class="mname" placeholder="Exercise name">
+        <input type="number" class="msets" placeholder="Sets" min="1">
+        <input type="text" class="mreps" placeholder="Reps e.g. 8-12">
+        <button class="madd">Add</button>
+      </div>
+    `;
+    panel.querySelectorAll('.esave').forEach(btn=>btn.addEventListener('click', ()=>{
+      const row = btn.closest('.manage-row');
+      const id = row.dataset.id;
+      const ex = split.exercises.find(e=>e.id===id);
+      if(!ex) return;
+      const newName = row.querySelector('.ename').value.trim();
+      const newSets = Number(row.querySelector('.esets').value)||ex.sets;
+      const newReps = row.querySelector('.ereps').value.trim()||ex.reps;
+      if(newName) ex.name = newName;
+      ex.sets = newSets;
+      ex.reps = newReps;
+      save(); renderTraining();
+      const p = document.getElementById('managePanel_'+key); if(p){ p.style.display='block'; renderManagePanel(p,key); }
+    }));
+    panel.querySelectorAll('.del').forEach(btn=>btn.addEventListener('click', ()=>{
+      split.exercises = split.exercises.filter(e=>e.id!==btn.dataset.id);
+      save(); renderTraining(); document.getElementById('managePanel_'+key) && (document.getElementById('managePanel_'+key).style.display='block');
+      const p = document.getElementById('managePanel_'+key); if(p) renderManagePanel(p, key);
+    }));
+    panel.querySelector('.madd').addEventListener('click', ()=>{
+      const name = panel.querySelector('.mname').value.trim();
+      const sets = Number(panel.querySelector('.msets').value)||3;
+      const reps = panel.querySelector('.mreps').value.trim()||'8-12';
+      if(!name) return;
+      const id = key+'_'+Date.now()+Math.floor(Math.random()*999);
+      split.exercises.push({id,name,sets,reps});
+      save(); renderTraining();
+      const p = document.getElementById('managePanel_'+key); if(p){ p.style.display='block'; renderManagePanel(p,key); }
+    });
+  }
+
+  function refreshAfterWorkoutChange(skipFullRerenderOfSets){
+    // recompute trained-derived UI without nuking input focus on set edits
+    const iso = trainViewDate;
+    const key = getSplitKey(iso);
+    if(key){
+      const w = getWorkout(iso);
+      const hasSets = Object.values(w.exercises||{}).some(ex=>ex.sets && ex.sets.some(s=>s.done));
+      const stampEl = document.getElementById('trainStamp');
+      if(hasSets){ stampEl.textContent='LOGGED'; stampEl.className='stamp band-high'; }
+      else if(w.cardio && w.cardio.done){ stampEl.textContent='CARDIO ONLY'; stampEl.className='stamp band-mid'; }
+      else { stampEl.textContent='NOT STARTED'; stampEl.className='stamp band-low'; }
+    }
+    refreshStats(); renderHeatmap(); renderChart(); renderPerHabit(); renderInsight();
+    if(iso===todayISO){ document.getElementById('todayScore').textContent = (()=>{const s=scoreForDate(todayISO); return s===null?'–':s+'%';})(); }
+  }
+
+  document.getElementById('trainDatePicker').addEventListener('change', e=>{
+    trainViewDate = e.target.value || todayISO;
+    renderTraining();
+  });
+
+  // ---------- stats ----------
+  function allDatesSorted(){
+    const keys = new Set([...Object.keys(state.entries), ...Object.keys(state.workouts)]);
+    return Array.from(keys).filter(d=>scoreForDate(d)!==null).sort();
+  }
+
+  function computeMomentum(){
+    const dates = allDatesSorted();
+    if(dates.length===0) return null;
+    let cursor = new Date(dates[0]);
+    const last = new Date(todayISO);
+    let momentum=null; const alpha=0.25;
+    while(cursor<=last){
+      const iso = isoOf(cursor);
+      const s = scoreForDate(iso);
+      const dayVal = s===null?0:s;
+      momentum = momentum===null ? dayVal : (momentum*(1-alpha)+dayVal*alpha);
+      cursor.setDate(cursor.getDate()+1);
+    }
+    return Math.round(momentum);
+  }
+  function computeLogStreak(){
+    let streak=0; let cursor=new Date();
+    while(true){
+      const iso=isoOf(cursor);
+      if(scoreForDate(iso)!==null){ streak++; cursor.setDate(cursor.getDate()-1); } else break;
+    }
+    return streak;
+  }
+  function computeLongestStreakEver(){
+    const dates = allDatesSorted();
+    if(dates.length===0) return 0;
+    let longest=1,cur=1;
+    for(let i=1;i<dates.length;i++){
+      const prev=new Date(dates[i-1]), curd=new Date(dates[i]);
+      const diff=(curd-prev)/86400000;
+      if(diff===1){ cur++; longest=Math.max(longest,cur); } else cur=1;
+    }
+    return longest;
+  }
+  function computeWeekAvg(){
+    let total=0,count=0,cursor=new Date();
+    for(let i=0;i<7;i++){ const s=scoreForDate(isoOf(cursor)); if(s!==null){total+=s;count++;} cursor.setDate(cursor.getDate()-1); }
+    return count===0?null:Math.round(total/count);
+  }
+  function computeBestDay(){
+    const dates=allDatesSorted(); if(dates.length===0) return null;
+    let best=-1; dates.forEach(d=>{ const s=scoreForDate(d); if(s>best) best=s; });
+    return best;
+  }
+  function stampFor(m){
+    if(m===null) return {text:'NO DATA', band:'band-mid'};
+    if(m>=80) return {text:'SITE READY', band:'band-high'};
+    if(m>=60) return {text:'ON TRACK', band:'band-high'};
+    if(m>=40) return {text:'BEHIND SCHEDULE', band:'band-mid'};
+    return {text:'NEEDS ATTENTION', band:'band-low'};
+  }
+  function refreshStats(){
+    const momentum=computeMomentum(), streak=computeLogStreak(), week=computeWeekAvg();
+    document.getElementById('statMomentum').textContent = momentum===null?'–':momentum+'%';
+    document.getElementById('statLogStreak').textContent = streak;
+    document.getElementById('statWeek').textContent = week===null?'–':week+'%';
+    document.getElementById('statBest').textContent = (()=>{const b=computeBestDay(); return b===null?'–':b+'%';})();
+    document.getElementById('statLongestStreak').textContent = computeLongestStreakEver();
+    const stamp = stampFor(momentum);
+    const badge = document.getElementById('stampBadge');
+    badge.textContent = stamp.text; badge.className='stamp '+stamp.band;
+  }
+
+  // ---------- heatmap ----------
+  function renderHeatmap(){
+    const grid = document.getElementById('heatgrid');
+    grid.innerHTML='';
+    const cells=[]; for(let i=34;i>=0;i--){ const d=new Date(); d.setDate(d.getDate()-i); cells.push(d); }
+    cells.forEach(d=>{
+      const iso=isoOf(d);
+      const s=scoreForDate(iso);
+      let band='none'; if(s!==null){ band = s>=70?'high':(s>=40?'mid':'low'); }
+      const cell=document.createElement('div');
+      cell.className='heatcell'; cell.dataset.band=band;
+      if(iso===todayISO) cell.dataset.today='1';
+      cell.title = iso + (s!==null?' — '+s+'%':' — not logged');
+      cell.addEventListener('click', ()=>openModal(iso));
+      grid.appendChild(cell);
+    });
+  }
+
+  // ---------- modal for backfill (habits only — training uses date picker above) ----------
+  const overlay=document.getElementById('modalOverlay');
+  function openModal(iso){
+    document.getElementById('modalDate').textContent = new Date(iso+'T00:00:00').toLocaleDateString('en-AU',{weekday:'long', day:'numeric', month:'short'});
+    const entry = getEntry(iso);
+    const list = document.getElementById('modalItemList');
+    const update = ()=>{ const s = scoreForDate(iso); document.getElementById('modalScore').textContent = s===null?'–':s+'%'; };
+    renderItemList(list, entry, ()=>{ save(); update(); refreshAll(); });
+    update();
+    overlay.classList.add('open');
+  }
+  document.getElementById('modalClose').addEventListener('click', ()=>overlay.classList.remove('open'));
+  overlay.addEventListener('click', e=>{ if(e.target===overlay) overlay.classList.remove('open'); });
+
+  // ---------- trend chart ----------
+  function renderChart(){
+    const svg=document.getElementById('trendChart'), note=document.getElementById('chartEmptyNote');
+    const dates=allDatesSorted();
+    if(dates.length<2){ svg.style.display='none'; note.style.display='block'; return; }
+    svg.style.display='block'; note.style.display='none';
+    const first=new Date(dates[0]), last=new Date(todayISO);
+    const points=[]; let cursor=new Date(first);
+    while(cursor<=last){
+      let total=0,count=0;
+      for(let i=0;i<7;i++){ const d=new Date(cursor); d.setDate(d.getDate()+i); if(d>last) break; const s=scoreForDate(isoOf(d)); if(s!==null){total+=s;count++;} }
+      if(count>0) points.push(Math.round(total/count));
+      cursor.setDate(cursor.getDate()+7);
+    }
+    if(points.length<2){ svg.style.display='none'; note.style.display='block'; return; }
+    const w=600,h=180,pad=16, stepX=(w-2*pad)/(points.length-1), y=v=>h-pad-(v/100)*(h-2*pad);
+    let path=''; points.forEach((p,i)=>{ const x=pad+i*stepX; path+=(i===0?'M':'L')+x.toFixed(1)+','+y(p).toFixed(1)+' '; });
+    let html = `<line x1="${pad}" y1="${y(70).toFixed(1)}" x2="${w-pad}" y2="${y(70).toFixed(1)}" stroke="#4C8C6B" stroke-width="1" stroke-dasharray="3,3" opacity="0.4"/>`;
+    html += `<path d="${path}" fill="none" stroke="#1F2420" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>`;
+    points.forEach((p,i)=>{ const x=pad+i*stepX; const color=p>=70?'#4C8C6B':(p>=40?'#E8A33D':'#B5533C'); html+=`<circle cx="${x.toFixed(1)}" cy="${y(p).toFixed(1)}" r="4" fill="${color}"/>`; });
+    svg.innerHTML=html;
+  }
+
+  // ---------- per-habit averages ----------
+  function renderPerHabit(){
+    const card = document.getElementById('perHabitCard');
+    card.innerHTML='';
+    const dates=[]; for(let i=13;i>=0;i--){ const d=new Date(); d.setDate(d.getDate()-i); dates.push(isoOf(d)); }
+    const habits = scoringHabitList();
+    let any=false;
+    habits.forEach(h=>{
+      let total=0,count=0;
+      dates.forEach(iso=>{ const e=entryForDate(iso); const v=valueFor(e,h); const s=scoreOf(h,v); if(s!==null){total+=s;count++;} });
+      if(count===0) return;
+      any=true;
+      const avg=Math.round(total/count);
+      const row=document.createElement('div'); row.className='perhabit-row';
+      const color = avg>=70?'#4C8C6B':(avg>=40?'#E8A33D':'#B5533C');
+      row.innerHTML = `<span class="n">${h.label}</span><div class="bar-bg"><div class="bar-fill" style="width:${avg}%;background:${color}"></div></div><span class="v">${avg}%</span>`;
+      card.appendChild(row);
+    });
+    if(!any) card.innerHTML = `<div class="empty-note dark">Nothing logged in the last 14 days yet.</div>`;
+  }
+
+  // ---------- insights: pearson correlation ----------
+  function pearson(a,b){
+    const n=a.length; if(n<3) return null;
+    const meanA=a.reduce((x,y)=>x+y,0)/n, meanB=b.reduce((x,y)=>x+y,0)/n;
+    let num=0,denA=0,denB=0;
+    for(let i=0;i<n;i++){ const da=a[i]-meanA, db=b[i]-meanB; num+=da*db; denA+=da*da; denB+=db*db; }
+    if(denA===0||denB===0) return null;
+    return num/Math.sqrt(denA*denB);
+  }
+  function populateCorrSelects(){
+    const habits = scoringHabitList();
+    ['corrA','corrB'].forEach((id,idx)=>{
+      const sel=document.getElementById(id);
+      const prevVal = sel.value;
+      sel.innerHTML='';
+      habits.forEach((h,i)=>{ const opt=document.createElement('option'); opt.value=h.id; opt.textContent=h.label; if(prevVal ? prevVal===h.id : i===idx) opt.selected=true; sel.appendChild(opt); });
+    });
+  }
+  function renderInsight(){
+    const habits=scoringHabitList();
+    const idA=document.getElementById('corrA').value, idB=document.getElementById('corrB').value;
+    const hA=habits.find(h=>h.id===idA), hB=habits.find(h=>h.id===idB);
+    const result=document.getElementById('corrResult');
+    if(!hA||!hB||idA===idB){ result.textContent='Pick two different habits to compare.'; return; }
+    const dates=allDatesSorted();
+    const a=[],b=[];
+    dates.forEach(iso=>{
+      const e=entryForDate(iso);
+      const sa=scoreOf(hA, valueFor(e,hA)), sb=scoreOf(hB, valueFor(e,hB));
+      if(sa!==null && sb!==null){ a.push(sa); b.push(sb); }
+    });
+    if(a.length<5){ result.innerHTML = `Not enough overlapping days logged yet (need at least 5, have <b>${a.length}</b>).`; return; }
+    const r=pearson(a,b);
+    if(r===null){ result.textContent='Not enough variation in one of these to compare.'; return; }
+    const strength = Math.abs(r)>=0.6?'a strong':Math.abs(r)>=0.3?'a moderate':'a weak';
+    const dir = r>0?'move together':'move in opposite directions';
+    result.innerHTML = `<b>r = ${r.toFixed(2)}</b> across ${a.length} logged days — ${strength} tendency for these to ${dir}.`;
+  }
+  document.getElementById('corrA').addEventListener('change', renderInsight);
+  document.getElementById('corrB').addEventListener('change', renderInsight);
+
+  // ---------- settings ----------
+  function weightBtns(h){
+    const w=weightOf(h);
+    return `<div class="weight-btns">
+      <button data-w="1" class="${w===1?'on':''}">Low</button>
+      <button data-w="2" class="${w===2?'on':''}">Med</button>
+      <button data-w="3" class="${w===3?'on':''}">High</button>
+    </div>`;
+  }
+  function renderCoreSettings(){
+    const wrap=document.getElementById('coreHabitSettings'); wrap.innerHTML='';
+    CORE.concat([TRAINED_HABIT]).forEach(h=>{
+      const row=document.createElement('div'); row.className='settings-row';
+      row.innerHTML=`<span class="name">${h.label}</span>${weightBtns(h)}`;
+      wrap.appendChild(row);
+      row.querySelectorAll('.weight-btns button').forEach(btn=>btn.addEventListener('click', ()=>{
+        state.weights[h.id]=Number(btn.dataset.w); save(); renderCoreSettings(); refreshAll();
+      }));
+    });
+  }
+  function renderCustomSettings(){
+    const wrap=document.getElementById('customHabitSettings'); wrap.innerHTML='';
+    if(state.customHabits.length===0){ wrap.innerHTML=`<div class="empty-note" style="text-align:left;padding:4px 0;">No custom habits yet.</div>`; }
+    state.customHabits.forEach(h=>{
+      const row=document.createElement('div'); row.className='settings-row';
+      row.innerHTML=`<span class="name">${h.label}</span>${weightBtns(h)}<button class="del" data-id="${h.id}">✕</button>`;
+      wrap.appendChild(row);
+      row.querySelectorAll('.weight-btns button').forEach(btn=>btn.addEventListener('click', ()=>{
+        state.weights[h.id]=Number(btn.dataset.w); save(); renderCustomSettings(); refreshAll();
+      }));
+      row.querySelector('.del').addEventListener('click', ()=>{
+        state.customHabits = state.customHabits.filter(x=>x.id!==h.id);
+        Object.values(state.entries).forEach(e=>{ if(e.custom) delete e.custom[h.id]; });
+        delete state.weights[h.id];
+        save(); refreshAll();
+      });
+    });
+  }
+
+  document.getElementById('newHabitType').addEventListener('change', e=>{
+    const isCount = e.target.value==='count';
+    document.getElementById('newHabitExtra').style.display = isCount ? 'flex' : 'none';
+    document.getElementById('newHabitSimpleAdd').style.display = isCount ? 'none' : 'flex';
+  });
+  function addCustomHabit(){
+    const label = document.getElementById('newHabitInput').value.trim();
+    if(!label) return;
+    const type = document.getElementById('newHabitType').value;
+    const id = 'custom_'+Date.now();
+    const h = {id, label, type};
+    if(type==='count'){
+      h.target = Number(document.getElementById('newHabitTarget').value)||1;
+      h.direction = document.getElementById('newHabitDirection').value;
+      h.unit='';
+    }
+    state.customHabits.push(h);
+    document.getElementById('newHabitInput').value='';
+    save(); refreshAll();
+  }
+  document.getElementById('newHabitBtn').addEventListener('click', addCustomHabit);
+  document.getElementById('newHabitBtnSimple').addEventListener('click', addCustomHabit);
+  document.getElementById('newHabitInput').addEventListener('keydown', e=>{ if(e.key==='Enter' && document.getElementById('newHabitType').value!=='count') addCustomHabit(); });
+
+  document.getElementById('addHabitBtn').addEventListener('click', ()=>{
+    document.querySelector('details.settings').open=true;
+    document.getElementById('newHabitInput').scrollIntoView({behavior:'smooth', block:'center'});
+    document.getElementById('newHabitInput').focus();
+  });
+
+  document.getElementById('waterTargetInput').addEventListener('change', e=>{ const v=Number(e.target.value); if(v>0){ state.waterTarget=v; save(); refreshAll(); } });
+  document.getElementById('screenTargetInput').addEventListener('change', e=>{ const v=Number(e.target.value); if(v>0){ state.screenTarget=v; save(); refreshAll(); } });
+  document.getElementById('adminTargetInput').addEventListener('change', e=>{ const v=Number(e.target.value); if(v>0){ state.adminTarget=v; save(); refreshAll(); } });
+
+  document.getElementById('exportBtn').addEventListener('click', ()=>{
+    const habits = scoringHabitList();
+    const headers = ['date', ...habits.map(h=>h.label), 'day_score'];
+    const rows = [headers.join(',')];
+    const keys = new Set([...Object.keys(state.entries), ...Object.keys(state.workouts)]);
+    Array.from(keys).sort().forEach(iso=>{
+      const e = entryForDate(iso);
+      const vals = habits.map(h=>{ const v=valueFor(e,h); return v===undefined||v===null?'':v; });
+      const s = dayScore(e);
+      rows.push([iso, ...vals, s===null?'':s].join(','));
+    });
+    const blob = new Blob([rows.join('\n')], {type:'text/csv'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href=url; a.download='the-docket-export.csv'; a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  document.getElementById('resetBtn').addEventListener('click', ()=>{
+    if(confirm('Clear all logged data? This cannot be undone.')){
+      state = {waterTarget:8, screenTarget:6, adminTarget:60, customHabits:[], weights:{}, entries:{}, splitConfig:makeDefaultSplitConfig(), workouts:{}};
+      save(); location.reload();
+    }
+  });
+
+  function refreshAll(){
+    renderToday();
+    refreshStats();
+    renderHeatmap();
+    renderChart();
+    renderPerHabit();
+    renderCoreSettings();
+    renderCustomSettings();
+    document.getElementById('waterTargetInput').value = state.waterTarget;
+    document.getElementById('screenTargetInput').value = state.screenTarget;
+    document.getElementById('adminTargetInput').value = state.adminTarget;
+    document.getElementById('trainDatePicker').value = trainViewDate;
+    document.getElementById('trainDatePicker').max = todayISO;
+    renderTraining();
+    populateCorrSelects();
+    renderInsight();
+  }
+
+  refreshAll();
+})();
+</script>
+</body>
+</html>
